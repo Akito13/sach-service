@@ -7,9 +7,10 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
-public interface SachRepository extends MongoRepository<Sach, String> {
+public interface SachRepository extends MongoRepository<Sach, Integer> {
 
     Optional<Sach> findByTenAndTacGia(String s, String tg);
     @Query("{'$and':  [{'ten': {'$regex': ?0, '$options': 'i'}}, " +

@@ -4,6 +4,7 @@ import com.bookshop.sachservice.constants.SachConstants;
 import com.bookshop.sachservice.dto.ResponseDto;
 import com.bookshop.sachservice.dto.ResponsePayload;
 import com.bookshop.sachservice.dto.SachDto;
+import com.bookshop.sachservice.dto.TrangThaiSach;
 import com.bookshop.sachservice.service.impl.SachServiceImpl;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -28,10 +29,10 @@ public class SachController {
     private SachServiceImpl crudService;
 
     @PostMapping
-    public ResponseEntity<ResponseDto<SachDto>> createSach(@Valid @RequestBody SachDto sachDto, WebRequest request){
+    public ResponseEntity<ResponseDto<SachDto>> createSach(@Valid @RequestBody SachDto sachDto, WebRequest request) {
         List<SachDto> createdSachDtos = crudService.create(sachDto);
         ResponsePayload<SachDto> payload = ResponsePayload.<SachDto>
-                builder()
+                        builder()
                 .records(createdSachDtos).recordCounts((long) createdSachDtos.size())
                 .currentPage(0).currentPageSize(1).totalPages(1).pageSize(1)
                 .build();
@@ -55,14 +56,14 @@ public class SachController {
                                                                @RequestParam("loai") Optional<String> tl,
                                                                @RequestParam("gia") Optional<BigDecimal> g,
                                                                @PathVariable("role") String role,
-                                                               WebRequest request){
+                                                               WebRequest request) {
         int page = os.orElse(0);
         int pageSize = ps.orElse(3);
         String tenSach = ts.orElse("");
         String tenLoai = tl.orElse("");
         BigDecimal gia = g.orElse(BigDecimal.valueOf(Integer.MAX_VALUE));
         Page<SachDto> sachDtoPage = null;
-        if(role.equals("admin")) {
+        if (role.equals("admin")) {
             sachDtoPage = crudService.findWithConditionAdmin(page, pageSize, tenSach, tenLoai, gia);
         } else {
             sachDtoPage = crudService.findWithConditionUser(page, pageSize, tenSach, tenLoai, gia);
@@ -127,5 +128,14 @@ public class SachController {
                         .payload(null)
                         .build()
                 );
+    }
+
+//    Internal API
+    @GetMapping("trangThaiGia")
+    public List<TrangThaiSach> getTrangThaiGia(@RequestParam List<Integer> sachIds) {
+        return crudService.getTrangThaiGia(sachIds)
+                .stream()
+                .map(sach -> new TrangThaiSach(sach.getId(), sach.getGiaSach().getGiaBan(), sach.getTrangThai()))
+                .toList();
     }
 }

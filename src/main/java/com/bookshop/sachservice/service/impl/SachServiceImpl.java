@@ -84,6 +84,9 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
         return null;
     }
 
+    public List<Sach> getTrangThaiGia(List<Integer> sachIds){
+        return sachRepository.findAllById(sachIds);
+    }
     private boolean checkNgayGiamGia(LocalDate endTime){
         return endTime.isAfter(LocalDate.now());
     }
