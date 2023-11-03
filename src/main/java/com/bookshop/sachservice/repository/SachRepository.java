@@ -22,4 +22,6 @@ public interface SachRepository extends MongoRepository<Sach, Integer> {
             "{'$expr': {$lte: [{$subtract: ['$giaSach.giaBan', {'$multiply': ['$giaSach.giaBan', '$giaSach.phanTramGiam']}]}, ?2]}}," +
             "{'trangThai': true}]}")
     Page<Sach> findWithOptionalConditionUser(String tenSach, String tenLoai, BigDecimal gia, Pageable pageable);
+
+    List<Sach> findAllByIdOrderById(Iterable<Integer> saches);
 }

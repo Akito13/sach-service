@@ -84,8 +84,14 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
         return null;
     }
 
+//    Internal API
     public List<Sach> getTrangThaiGia(List<Integer> sachIds){
         return sachRepository.findAllById(sachIds);
+    }
+//    Internal API
+    public Integer getIdSach(Integer id) {
+        Optional<Sach> optionalSach = sachRepository.findById(id);
+        return optionalSach.map(Sach::getId).orElse(-1);
     }
     private boolean checkNgayGiamGia(LocalDate endTime){
         return endTime.isAfter(LocalDate.now());

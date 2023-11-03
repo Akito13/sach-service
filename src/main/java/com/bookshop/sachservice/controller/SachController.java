@@ -5,6 +5,7 @@ import com.bookshop.sachservice.dto.ResponseDto;
 import com.bookshop.sachservice.dto.ResponsePayload;
 import com.bookshop.sachservice.dto.SachDto;
 import com.bookshop.sachservice.dto.TrangThaiSach;
+import com.bookshop.sachservice.model.Sach;
 import com.bookshop.sachservice.service.impl.SachServiceImpl;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.web.context.request.WebRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,7 +137,13 @@ public class SachController {
     public List<TrangThaiSach> getTrangThaiGia(@RequestParam List<Integer> sachIds) {
         return crudService.getTrangThaiGia(sachIds)
                 .stream()
+                .sorted(Comparator.comparingInt(Sach::getId))
                 .map(sach -> new TrangThaiSach(sach.getId(), sach.getGiaSach().getGiaBan(), sach.getTrangThai()))
                 .toList();
+    }
+    
+    @GetMapping("id")
+    public Integer getIdSach(@RequestParam Integer sachId){
+        return crudService.getIdSach(sachId);
     }
 }
