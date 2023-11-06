@@ -15,7 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SachDto {
-    private Integer id;
+    private Long id;
     @NotBlank(message = "Tên không bỏ trống")
     private String ten;
     private String moTa;

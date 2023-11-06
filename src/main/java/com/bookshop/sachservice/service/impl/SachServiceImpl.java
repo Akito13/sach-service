@@ -63,7 +63,7 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
             throw new SachNotFoundException("Sách không tồn tại");
         }
         Sach foundSach = optionalSach.get();
-        int id = foundSach.getId();
+        Long id = foundSach.getId();
         foundSach = CommonMapper.mapToSach(sachDto, sachDto.getLoaiDto(), sachDto.getGiaSach());
         foundSach.setId(id);
         sachRepository.save(foundSach);
@@ -85,13 +85,13 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
     }
 
 //    Internal API
-    public List<Sach> getTrangThaiGia(List<Integer> sachIds){
+    public List<Sach> getTrangThaiGia(List<Long> sachIds){
         return sachRepository.findAllById(sachIds);
     }
 //    Internal API
-    public Integer getIdSach(Integer id) {
+    public Long getIdSach(Long id) {
         Optional<Sach> optionalSach = sachRepository.findById(id);
-        return optionalSach.map(Sach::getId).orElse(-1);
+        return optionalSach.map(Sach::getId).orElse(-1L);
     }
     private boolean checkNgayGiamGia(LocalDate endTime){
         return endTime.isAfter(LocalDate.now());

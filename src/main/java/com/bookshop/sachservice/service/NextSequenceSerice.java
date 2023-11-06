@@ -17,7 +17,7 @@ public class NextSequenceSerice {
     @Autowired
     private MongoOperations operations;
 
-    public int getNextSequence(String seqName){
+    public Long getNextSequence(String seqName){
         SachSequence counter = operations.findAndModify(
                 Query.query(Criteria.where("_id").is(seqName)),
                 new Update().inc("seq", 1),

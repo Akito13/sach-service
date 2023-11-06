@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TrangThaiSach {
-    private int sachId;
+    private Long sachId;
     private BigDecimal gia;
     private Boolean trangThai;
 }

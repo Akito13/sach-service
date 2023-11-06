@@ -23,7 +23,7 @@ public class Sach {
     public static final String SEQUENCE_NAME = "sachSeq";
 
     @Id
-    private int id;
+    private Long id;
     private String ten;
     private String moTa;
     private LocalDate nxb;

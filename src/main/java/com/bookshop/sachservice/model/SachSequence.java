@@ -12,5 +12,5 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class SachSequence {
     @Id
     private String id;
-    private int seq;
+    private Long seq;
 }

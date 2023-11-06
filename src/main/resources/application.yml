@@ -3,16 +3,6 @@ spring:
     name: "sach"
   config:
     import: "configserver:http://localhost:8071"
-    name: sach
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  endpoint:
-    shutdown:
-      enabled: true
-  info:
-    env:
-      enabled: true
+  cloud:
+    config:
+      name: sach, common

@@ -134,16 +134,16 @@ public class SachController {
 
 //    Internal API
     @GetMapping("trangThaiGia")
-    public List<TrangThaiSach> getTrangThaiGia(@RequestParam List<Integer> sachIds) {
+    public List<TrangThaiSach> getTrangThaiGia(@RequestParam List<Long> sachIds) {
         return crudService.getTrangThaiGia(sachIds)
                 .stream()
-                .sorted(Comparator.comparingInt(Sach::getId))
+                .sorted(Comparator.comparingLong(Sach::getId))
                 .map(sach -> new TrangThaiSach(sach.getId(), sach.getGiaSach().getGiaBan(), sach.getTrangThai()))
                 .toList();
     }
     
     @GetMapping("id")
-    public Integer getIdSach(@RequestParam Integer sachId){
+    public Long getIdSach(@RequestParam Long sachId){
         return crudService.getIdSach(sachId);
     }
 }
