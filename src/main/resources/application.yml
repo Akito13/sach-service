@@ -6,3 +6,15 @@ spring:
   cloud:
     config:
       name: sach, common
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          mongodb:
+            core:
+              MongoTemplate: DEBUG
+              ReactiveMongoTemplate: DEBUG

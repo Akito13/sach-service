@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseDto<SachDto>> handleGlobalException(Exception exception, WebRequest request){
         ResponseDto<SachDto> responseDto = ResponseDto.<SachDto>builder()
-                .apiPath(request.getDescription(false))
+                .apiPath(request.getDescription(true))
                 .message(exception.getMessage())
                 .timestamp(LocalDateTime.now())
                 .statusCode(HttpStatus.INTERNAL_SERVER_ERROR)

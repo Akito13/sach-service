@@ -1,20 +1,26 @@
 package com.bookshop.sachservice.service.impl;
 
 import com.bookshop.sachservice.dto.SachDto;
+import com.bookshop.sachservice.exception.InvalidBodyException;
 import com.bookshop.sachservice.exception.SachAlreadyExistsException;
 import com.bookshop.sachservice.exception.SachNotFoundException;
 import com.bookshop.sachservice.mapper.CommonMapper;
+import com.bookshop.sachservice.model.Loai;
 import com.bookshop.sachservice.model.Sach;
+import com.bookshop.sachservice.repository.LoaiRepository;
 import com.bookshop.sachservice.repository.SachRepository;
 import com.bookshop.sachservice.service.ICrudService;
 import com.bookshop.sachservice.service.IPageCrudService;
 import com.bookshop.sachservice.service.NextSequenceSerice;
 import lombok.AllArgsConstructor;
+import org.bson.types.Decimal128;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +32,7 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
 
     private SachRepository sachRepository;
     private NextSequenceSerice sequenceService;
+    private LoaiRepository loaiRepository;
     @Override
     public List<SachDto> create(SachDto sachDto) {
         sachDto.setTrangThai(true);
@@ -44,21 +51,21 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
         return sachRepository.findAll().stream().map(sach -> CommonMapper.mapToSachDto(sach, sach.getLoai(), sach.getGiaSach())).toList();
     }
     @Override
-    public Page<SachDto> findWithConditionAdmin(int offset, int pageSize, String tenSach, String tenLoai, BigDecimal gia) {
-        return sachRepository.findWithOptionalConditionAdmin(tenSach, tenLoai, gia,PageRequest.of(offset, pageSize))
+    public Page<SachDto> findWithConditionAdmin(int offset, int pageSize, String tenSach, String tenLoai, BigDecimal gia, Sort sort) {
+        return sachRepository.findWithOptionalConditionAdmin(tenSach, tenLoai, new Decimal128(gia.round(MathContext.DECIMAL128)),PageRequest.of(offset, pageSize, sort))
                 .map(sach -> CommonMapper.mapToSachDto(sach, sach.getLoai(), sach.getGiaSach()));
     }
 
     @Override
-    public Page<SachDto> findWithConditionUser(int offset, int pageSize, String tenSach, String tenLoai, BigDecimal gia) {
-        return sachRepository.findWithOptionalConditionUser(tenSach, tenLoai, gia,PageRequest.of(offset, pageSize))
+    public Page<SachDto> findWithConditionUser(int offset, int pageSize, String tenSach, String tenLoai, BigDecimal gia, Sort sort) {
+        return sachRepository.findWithOptionalConditionUser(tenSach, tenLoai, new Decimal128(gia.round(MathContext.DECIMAL128)),PageRequest.of(offset, pageSize, sort))
                 .map(sach -> CommonMapper.mapToSachDto(sach, sach.getLoai(), sach.getGiaSach()));
     }
 
     @Override
     public List<SachDto> update(SachDto sachDto, boolean delete) {
         sachDto.setTrangThai(delete);
-        Optional<Sach> optionalSach = sachRepository.findByTenAndTacGia(sachDto.getTen(), sachDto.getTacGia());
+        Optional<Sach> optionalSach = sachRepository.findById(sachDto.getId());
         if (optionalSach.isEmpty()) {
             throw new SachNotFoundException("Sách không tồn tại");
         }
@@ -74,14 +81,32 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
     @Override
     public void delete(SachDto sachDto) {
         if (sachDto.getTen() == null || sachDto.getTacGia() == null)
-            throw new RuntimeException("Tên sách và tên tác giả chưa có");
+            throw new InvalidBodyException("Tên sách và tên tác giả chưa có");
         update(sachDto, true);
+    }
+
+    public List<SachDto> getRandomSach() {
+        List<Loai> loais = loaiRepository.random().getMappedResults();
+        List<String> maLoais = loais.stream().map(Loai::getMa).toList();
+        maLoais.forEach(s -> System.out.println("Loại random là: " + s));
+        return sachRepository.findAllByLoai_MaIn(maLoais).stream()
+                 .map(sach -> CommonMapper.mapToSachDto(sach, sach.getLoai(), sach.getGiaSach()))
+                 .toList();
     }
 
     @Override
     @Deprecated
     public Page<SachDto> findAll(int offset, int pageSize) {
         return null;
+    }
+
+    public SachDto getSach(Long sachId) {
+       Optional<Sach> result = sachRepository.findById(sachId);
+       if(result.isEmpty()) {
+           throw new SachNotFoundException("Sách không có");
+       }
+       Sach sach = result.get();
+       return CommonMapper.mapToSachDto(sach, sach.getLoai(), sach.getGiaSach());
     }
 
 //    Internal API

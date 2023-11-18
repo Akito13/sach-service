@@ -1,5 +1,6 @@
 package com.bookshop.sachservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,8 +20,9 @@ public class SachDto {
     @NotBlank(message = "Tên không bỏ trống")
     private String ten;
     private String moTa;
-    @NotBlank(message = "Ngày xuất bản không bỏ trống")
-    private String nxb;
+    @NotNull(message = "Ngày xuất bản không bỏ trống")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate nxb;
     @NotBlank(message = "Tác giả không bỏ trống")
     private String tacGia;
     @NotBlank(message = "Ảnh không bỏ trống")
