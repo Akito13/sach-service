@@ -15,7 +15,7 @@ public interface SachRepository extends MongoRepository<Sach, Long> {
 
     Optional<Sach> findByTenAndTacGia(String s, String tg);
     @Query("{'$and':  [{'ten': {'$regex': ?0, '$options': 'i'}}, " +
-            "{'loai.ten': {'$regex': ?1, '$options': 'i'}}, " +
+            "{'loai.ma': {'$regex': ?1, '$options': 'i'}}, " +
             "{'$expr': {$lte: [{$subtract: ['$giaSach.giaBan', {'$multiply': ['$giaSach.giaBan', '$giaSach.phanTramGiam']}]}, ?2]}}]}")
     Page<Sach> findWithOptionalConditionAdmin(String tenSach, String tenLoai, Decimal128 gia, Pageable pageable);
     @Query("{'$and':  [{'ten': {'$regex': ?0, '$options': 'i'}}, " +

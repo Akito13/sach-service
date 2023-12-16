@@ -1,6 +1,7 @@
 package com.bookshop.sachservice.service.impl;
 
-import com.bookshop.sachservice.dto.SachDto;
+import com.bookshop.sachservice.constants.AwsConstants;
+import com.bookshop.sachservice.dto.*;
 import com.bookshop.sachservice.exception.InvalidBodyException;
 import com.bookshop.sachservice.exception.SachAlreadyExistsException;
 import com.bookshop.sachservice.exception.SachNotFoundException;
@@ -9,41 +10,110 @@ import com.bookshop.sachservice.model.Loai;
 import com.bookshop.sachservice.model.Sach;
 import com.bookshop.sachservice.repository.LoaiRepository;
 import com.bookshop.sachservice.repository.SachRepository;
+import com.bookshop.sachservice.service.FileStoreService;
 import com.bookshop.sachservice.service.ICrudService;
 import com.bookshop.sachservice.service.IPageCrudService;
 import com.bookshop.sachservice.service.NextSequenceSerice;
 import lombok.AllArgsConstructor;
+import org.apache.http.entity.ContentType;
 import org.bson.types.Decimal128;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service("sachService")
 @AllArgsConstructor
-public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<SachDto> {
+public class SachServiceImpl implements ICrudService<SachDto, Long>, IPageCrudService<SachDto> {
 
     private SachRepository sachRepository;
     private NextSequenceSerice sequenceService;
     private LoaiRepository loaiRepository;
+    private FileStoreService fileStoreService;
+    private final String awsS3Path = "https://" + AwsConstants.S3_BUCKET_NAME + ".s3." + AwsConstants.S3_REGION +".amazonaws.com";
+
+    public Long create(SachDtoWithFile sachDtoWithFile) {
+        SachDto sachDto = SachDto.builder()
+                .giaSach(GiaDto.builder()
+                        .giaGoc(sachDtoWithFile.getGiaGoc())
+                        .giaBan(sachDtoWithFile.getGiaBan())
+                        .thoiGian(new TimeRange(sachDtoWithFile.getStartTime(), sachDtoWithFile.getEndTime()))
+                        .phanTramGiam(sachDtoWithFile.getPhanTramGiam())
+                        .build())
+                .moTa(sachDtoWithFile.getMoTa())
+                .loaiDto(LoaiDto.builder()
+                        .ten(sachDtoWithFile.getTenLoai())
+                        .ma(sachDtoWithFile.getMaLoai())
+                        .parent(sachDtoWithFile.getParentLoai())
+                        .build())
+                .soLuong(sachDtoWithFile.getSoLuong())
+                .anh(sachDtoWithFile.getAnh())
+                .ten(sachDtoWithFile.getTen())
+                .tacGia(sachDtoWithFile.getTacGia())
+                .nxb(sachDtoWithFile.getNxb())
+                .build();
+        return create(sachDto, sachDtoWithFile.getImg());
+    }
     @Override
-    public List<SachDto> create(SachDto sachDto) {
+    public Long create(SachDto sachDto, MultipartFile file) {
+        if(file.isEmpty()) {
+            throw new InvalidBodyException("Chưa có file hình ảnh");
+        }
+
+        if(!Arrays.asList(ContentType.IMAGE_PNG.getMimeType(),
+                ContentType.IMAGE_GIF.getMimeType(),
+                ContentType.IMAGE_BMP.getMimeType(),
+                ContentType.IMAGE_JPEG.getMimeType(),
+                ContentType.IMAGE_WEBP.getMimeType()).contains(file.getContentType())) {
+            throw new InvalidBodyException("File phải là định dạng ảnh");
+        }
+        System.out.println(file.getName());
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("Content-Type", file.getContentType());
+        metadata.put("Content-Length", String.valueOf(file.getSize()));
+
         sachDto.setTrangThai(true);
         Optional<Sach> optionalSach = sachRepository.findByTenAndTacGia(sachDto.getTen(), sachDto.getTacGia());
         if (optionalSach.isPresent()) {
             throw new SachAlreadyExistsException("Sách này đã tồn tại");
         }
         Sach sach = CommonMapper.mapToSach(sachDto, sachDto.getLoaiDto(), sachDto.getGiaSach());
-        sach.setId(sequenceService.getNextSequence(Sach.SEQUENCE_NAME));
-        Sach savedSach = sachRepository.save(sach);
-        return Collections.singletonList(CommonMapper.mapToSachDto(savedSach, savedSach.getLoai(), savedSach.getGiaSach()));
+
+        try {
+            fileStoreService.upload(AwsConstants.S3_BUCKET_NAME + "/", sach.getAnh(), Optional.of(metadata), file.getInputStream());
+            sach.setId(sequenceService.getNextSequence(Sach.SEQUENCE_NAME));
+            sach.setAnh(awsS3Path + "/" + sach.getAnh());
+            Sach savedSach = sachRepository.save(sach);
+            return savedSach.getId();
+        } catch (Exception e) {
+            throw new IllegalStateException("Thêm thất bại", e);
+        }
+//        sach.setId(sequenceService.getNextSequence(Sach.SEQUENCE_NAME));
+//        Sach savedSach = sachRepository.save(sach);
+//        return savedSach.getId();
+
+//        try {
+//            System.out.println(sach.getId() + ":"
+//                    + sach.getTen() + ":"
+//                    + sach.getGiaSach() + ":"
+//                    + sach.getGiaSach().getGiaBan() + ":"
+//                    + sach.getSoLuong() + ":"
+//                    + sach.getNxb() + ":"
+//                    + sach.getTacGia()+":"
+//                    + sach.getLoai().getMa()+":"
+//                    + sach.getLoai().getTen()+":"
+//                    + sach.getLoai().getParent()+":"
+//                    + sach.getAnh());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override
@@ -63,8 +133,8 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
     }
 
     @Override
-    public List<SachDto> update(SachDto sachDto, boolean delete) {
-        sachDto.setTrangThai(delete);
+    public List<SachDto> update(SachDto sachDto, boolean trangThai) {
+        sachDto.setTrangThai(trangThai);
         Optional<Sach> optionalSach = sachRepository.findById(sachDto.getId());
         if (optionalSach.isEmpty()) {
             throw new SachNotFoundException("Sách không tồn tại");
@@ -73,16 +143,41 @@ public class SachServiceImpl implements ICrudService<SachDto>, IPageCrudService<
         Long id = foundSach.getId();
         foundSach = CommonMapper.mapToSach(sachDto, sachDto.getLoaiDto(), sachDto.getGiaSach());
         foundSach.setId(id);
-        sachRepository.save(foundSach);
-        return Collections.singletonList(CommonMapper.mapToSachDto(foundSach, foundSach.getLoai(), foundSach.getGiaSach()));
-
+        try {
+            System.out.println(foundSach.getId() + ":"
+                    + foundSach.getTen() + ":"
+                    + foundSach.getGiaSach() + ":"
+                    + foundSach.getGiaSach().getGiaBan() + ":"
+                    + foundSach.getSoLuong() + ":"
+                    + foundSach.getNxb() + ":"
+                    + foundSach.getTacGia()+":"
+                    + foundSach.getLoai().getMa()+":"
+                    + foundSach.getLoai().getTen()+":"
+                    + foundSach.getLoai().getParent());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Sach savedSach = sachRepository.save(foundSach);
+        return Collections.singletonList(CommonMapper.mapToSachDto(savedSach, savedSach.getLoai(), savedSach.getGiaSach()));
     }
 
     @Override
-    public void delete(SachDto sachDto) {
-        if (sachDto.getTen() == null || sachDto.getTacGia() == null)
-            throw new InvalidBodyException("Tên sách và tên tác giả chưa có");
-        update(sachDto, true);
+    public void delete(Long sachId) {
+        Optional<Sach> result = sachRepository.findById(sachId);
+        if(result.isPresent()){
+            Sach sach = result.get();
+            sach.setTrangThai(false);
+            sachRepository.save(sach);
+        }
+    }
+
+    public void recoverSach(Long sachId) {
+        Optional<Sach> result = sachRepository.findById(sachId);
+        if(result.isPresent()) {
+            Sach sach = result.get();
+            sach.setTrangThai(true);
+            sachRepository.save(sach);
+        }
     }
 
     public List<SachDto> getRandomSach() {

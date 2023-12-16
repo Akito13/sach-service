@@ -2,10 +2,15 @@ package com.bookshop.sachservice.service.impl;
 
 import com.bookshop.sachservice.dto.LoaiByGroupChildDto;
 import com.bookshop.sachservice.dto.LoaiByGroupParentDto;
+import com.bookshop.sachservice.dto.LoaiDto;
+import com.bookshop.sachservice.exception.LoaiAlreadyExistException;
+import com.bookshop.sachservice.mapper.CommonMapper;
 import com.bookshop.sachservice.model.Loai;
 import com.bookshop.sachservice.repository.LoaiRepository;
 import com.bookshop.sachservice.service.ICrudService;
 import lombok.AllArgsConstructor;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 import java.awt.print.Pageable;
@@ -22,8 +27,34 @@ public class LoaiGroupServiceImpl {
 
     private LoaiRepository loaiRepository;
 
-    public List<LoaiByGroupParentDto> create(LoaiByGroupParentDto dto) {
+    public void create(LoaiDto loaiDto) {
+        List<Loai> loaisByMa = loaiRepository.findAllByMa(loaiDto.getMa());
+        if(!loaisByMa.isEmpty()) {
+            throw new LoaiAlreadyExistException("Mã đã tồn tại");
+        }
+        List<Loai> loaisByTen = loaiRepository.findAllByTen(loaiDto.getTen());
+        if(!loaisByTen.isEmpty()) {
+            throw new LoaiAlreadyExistException("Tên đã tồn tại");
+        }
+        loaiRepository.save(CommonMapper.mapToLoai(loaiDto));
+    }
+
+    public List<LoaiDto> findAllWithougGrouping() {
+        List<Loai> loaiList = loaiRepository.findAll();
+        return loaiList.stream().map(loai -> CommonMapper.mapToLoaiDto(loai))
+                .toList();
+    }
+    private List<LoaiByGroupParentDto> create(LoaiByGroupParentDto dto) {
         return null;
+    }
+
+    private Set<String> getParentSet(List<Loai> loaiList) {
+        Set<String> parentName = new HashSet<>();
+        loaiList.stream().forEach(loai ->  {
+            String parent = loai.getParent();
+            parentName.add(parent);
+        });
+        return parentName;
     }
 
     public Set<LoaiByGroupParentDto> findAll() {
@@ -31,11 +62,7 @@ public class LoaiGroupServiceImpl {
 
         Set<LoaiByGroupParentDto> loaiParentSet = new HashSet<>();
 
-        Set<String> parentName = new HashSet<>();
-        loaiList.stream().forEach(loai ->  {
-             String parent = loai.getParent();
-             parentName.add(parent);
-        });
+        Set<String> parentName = getParentSet(loaiList);
 
         parentName.forEach(s -> {
             LoaiByGroupParentDto loaiByGroupParentDto = new LoaiByGroupParentDto();
@@ -64,4 +91,8 @@ public class LoaiGroupServiceImpl {
         return loaiParentSet;
     }
 
+    public Set<String> findParents() {
+        List<Loai> allLoai = loaiRepository.findAll();
+        return getParentSet(allLoai);
+    }
 }

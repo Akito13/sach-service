@@ -25,14 +25,6 @@ public class GiaDto {
     @ValidateDateRange
     private TimeRange thoiGian;
 
-//    @ValidateDateRange
-//    @JsonFormat(pattern = "yyyy-MM-dd")
-//    private LocalDate startTime;
-//
-//    @ValidateDateRange
-//    @JsonFormat(pattern = "yyyy-MM-dd")
-//    private LocalDate endTime;
-
     @Min(value = 0, message = "Phần trăm giảm phải hơn 0")
     @Max(value = 1, message = "Phần trăm giảm phải nhỏ hơn 1")
     private Double phanTramGiam;

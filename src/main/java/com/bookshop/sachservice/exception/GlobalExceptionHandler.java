@@ -24,6 +24,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(CommonMapper.buildErrorResponse(exception, request, null), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(LoaiAlreadyExistException.class)
+    public ResponseEntity<ErrorResponseDto> handleLoaiAlreadyExistsException(LoaiAlreadyExistException exception, WebRequest request){
+        return new ResponseEntity<>(CommonMapper.buildErrorResponse(exception, request, null), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(SachNotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleSachNotFoundException(SachNotFoundException exception, WebRequest request){
             return new ResponseEntity<>(CommonMapper.buildErrorResponse(exception, request, null), HttpStatus.BAD_REQUEST);

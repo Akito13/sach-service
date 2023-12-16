@@ -14,4 +14,6 @@ public class TrangThaiSach {
     private Long sachId;
     private BigDecimal gia;
     private Boolean trangThai;
+    private Double phanTramGiam;
+    private Integer soLuong;
 }

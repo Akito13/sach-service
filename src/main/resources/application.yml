@@ -5,7 +5,7 @@ spring:
     import: "configserver:http://localhost:8071"
   cloud:
     config:
-      name: sach, common
+      name: sach, common, kafka-common
   jpa:
     show-sql: true
 

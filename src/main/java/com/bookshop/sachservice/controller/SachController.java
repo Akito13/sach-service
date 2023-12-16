@@ -1,10 +1,7 @@
 package com.bookshop.sachservice.controller;
 
 import com.bookshop.sachservice.constants.SachConstants;
-import com.bookshop.sachservice.dto.ResponseDto;
-import com.bookshop.sachservice.dto.ResponsePayload;
-import com.bookshop.sachservice.dto.SachDto;
-import com.bookshop.sachservice.dto.TrangThaiSach;
+import com.bookshop.sachservice.dto.*;
 import com.bookshop.sachservice.exception.SachNotFoundException;
 import com.bookshop.sachservice.model.Sach;
 import com.bookshop.sachservice.service.impl.SachServiceImpl;
@@ -18,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,15 +28,18 @@ public class SachController {
 
     private SachServiceImpl crudService;
 
-    @PostMapping
-    public ResponseEntity<ResponseDto<SachDto>> createSach(@Valid @RequestBody SachDto sachDto, WebRequest request) {
-        List<SachDto> createdSachDtos = crudService.create(sachDto);
-        ResponsePayload<SachDto> payload = ResponsePayload.<SachDto>
-                        builder()
-                .records(createdSachDtos).recordCounts((long) createdSachDtos.size())
-                .currentPage(0).currentPageSize(1).totalPages(1).pageSize(1)
-                .build();
-        return createResponse(request, SachConstants.MESSAGE_CREATED, HttpStatus.CREATED, payload);
+    @PostMapping(path = "new", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<Long> createSach(@Valid @ModelAttribute SachDtoWithFile sachDto,
+                                           WebRequest request) {
+        System.out.println("Executing");
+        Long sachId = crudService.create(sachDto);
+        System.out.println("Executed");
+//        ResponsePayload<SachDto> payload = ResponsePayload.<SachDto>
+//                        builder()
+//                .records(createdSachDtos).recordCounts((long) createdSachDtos.size())
+//                .currentPage(0).currentPageSize(1).totalPages(1).pageSize(1)
+//                .build();
+        return new ResponseEntity<>(sachId, HttpStatus.CREATED);
 //        return ResponseEntity
 //                .status(HttpStatus.CREATED)
 //                .body(ResponseDto.<SachDto>builder()
@@ -123,9 +124,11 @@ public class SachController {
        return createResponse(request, SachConstants.MESSAGE_OK, HttpStatus.OK, payload);
     }
 
-    @PutMapping
-    public ResponseEntity<ResponseDto<SachDto>> updateSach(@Valid @RequestBody SachDto sachDto, WebRequest request) {
-        List<SachDto> createdSachDtos = crudService.update(sachDto, sachDto.getTrangThai());
+    @PutMapping("{sachId}")
+    public ResponseEntity<ResponseDto<SachDto>> updateSach(@PathVariable Long sachId,
+                                                           @Valid @RequestBody SachDto sachDto,
+                                                           WebRequest request) {
+        List<SachDto> createdSachDtos = crudService.update(sachDto, true);
         ResponsePayload<SachDto> payload = ResponsePayload.<SachDto>
                         builder()
                 .records(createdSachDtos).recordCounts((long) createdSachDtos.size())
@@ -134,9 +137,16 @@ public class SachController {
         return createResponse(request, SachConstants.MESSAGE_OK, HttpStatus.OK, payload);
     }
 
-    @DeleteMapping
-    public ResponseEntity<ResponseDto<SachDto>> markSachAsDeleted(@RequestBody SachDto sachDto, WebRequest request) {
-        crudService.delete(sachDto);
+    @PatchMapping("{sachId}")
+    public ResponseEntity<ResponseDto<SachDto>> recoverSach(@PathVariable Long sachId, WebRequest request) {
+        crudService.recoverSach(sachId);
+        return createResponse(request, SachConstants.MESSAGE_OK, HttpStatus.OK, null);
+    }
+
+    @DeleteMapping("{sachId}")
+    public ResponseEntity<ResponseDto<SachDto>> markSachAsDeleted(@PathVariable Long sachId, WebRequest request) {
+        crudService.delete(sachId);
+        System.out.println("Yeah deleted");
         return createResponse(request, SachConstants.MESSAGE_OK, HttpStatus.OK, null);
     }
 
@@ -146,7 +156,23 @@ public class SachController {
         return crudService.getTrangThaiGia(sachIds)
                 .stream()
                 .sorted(Comparator.comparingLong(Sach::getId))
-                .map(sach -> new TrangThaiSach(sach.getId(), sach.getGiaSach().getGiaBan(), sach.getTrangThai()))
+                .map(sach -> new TrangThaiSach(sach.getId(), sach.getGiaSach().getGiaBan(), sach.getTrangThai(), sach.getGiaSach().getPhanTramGiam(), sach.getSoLuong()))
+                .peek(trangThaiSach -> System.out.println(trangThaiSach.getPhanTramGiam()))
+                .toList();
+    }
+
+    @GetMapping("soLuongById")
+    public List<SoLuongSachDto> getSoLuongSachDto(@RequestParam List<Long> sachIds) {
+        return crudService.getTrangThaiGia(sachIds).stream()
+                .sorted(Comparator.comparingLong(Sach::getId))
+                .map(sach -> SoLuongSachDto.builder()
+                        .tenSach(sach.getTen())
+                        .soLuong(sach.getSoLuong())
+                        .donGia(sach.getGiaSach().getGiaBan())
+                        .sachId(sach.getId())
+                        .phanTramGiam(sach.getGiaSach().getPhanTramGiam())
+                        .trangThai(sach.getTrangThai())
+                        .build())
                 .toList();
     }
 
